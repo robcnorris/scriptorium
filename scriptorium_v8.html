@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scriptorium</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{
+      --parchment:     #f2e8d0;
+      --parchment-mid: #ede0c0;
+      --parchment-dk:  #e0d0a8;
+      --black:         #111;
+      --black-s:       #292220;
+      --black-m:       #504840;
+      --mustard:       #c4922a;
+      --mustard-lt:    #ddb84e;
+      --mustard-pale:  #e8cc80;
+      --wine:          #6b2737;
+      --wine-hv:       #7d3040;
+      --wine-dp:       #461520;
+      --input-bg:      #3a2e22;
+      --input-border:  #5a4a36;
+      --input-text:    #f0e4cc;
+      --input-ph:      #7a6040;
+      --chat-bg:       #18090d;
+      --chat-sf:       #221018;
+      --chat-bd:       #381820;
+      --chat-tx:       #ede6dc;
+      --chat-mt:       #6a5050;
+      --hdr-h:         72px;
+      --nav-h:         36px;
+      --today-w:       275px;
+      --f-disp:        "Big Caslon","Caslon 224 ITC",Didot,Georgia,serif;
+      --f-body:        Palatino,"Palatino Linotype","Book Antiqua",Georgia,serif;
+      --f-mono:        "Courier New",Courier,monospace;
+    }
+    html,body,#root{height:100%;margin:0;overflow:hidden;}
+    body{background:var(--parchment);color:var(--black);font-family:var(--f-body);font-size:16px;line-height:1.5;}
+
+    /* ── HEADER ── */
+    .hdr{position:fixed;top:0;left:0;right:0;z-index:300;height:var(--hdr-h);
+      background:var(--black);display:flex;align-items:center;
+      padding:0 1.3rem;gap:1.3rem;box-shadow:0 2px 14px rgba(0,0,0,0.5);}
+    .hdr-brand{display:flex;flex-direction:column;gap:3px;flex-shrink:0;}
+    .hdr-wordmark{font-family:var(--f-disp);font-size:1.75rem;font-weight:700;
+      letter-spacing:0.26em;text-transform:uppercase;}
+    .hdr-s   {color:var(--parchment);}
+    .hdr-rest{color:#d8cdb8;}
+    .hdr-em  {color:var(--mustard);}
+    /* Date — larger and more visible */
+    .hdr-date{font-family:var(--f-body);font-size:0.78rem;font-style:italic;
+      letter-spacing:0.06em;color:#aa9070;}
+
+    .hdr-div{width:1px;height:36px;background:#2a2a2a;flex-shrink:0;}
+
+    /* Filter */
+    .hdr-filter{flex:1;display:flex;align-items:center;gap:0.6rem;max-width:440px;}
+    .hdr-filter-label{font-family:var(--f-mono);font-size:0.54rem;letter-spacing:0.18em;
+      text-transform:uppercase;color:#8a7060;white-space:nowrap;flex-shrink:0;}
+    .hdr-filter-input{flex:1;background:var(--input-bg);border:1px solid var(--input-border);
+      color:var(--input-text);padding:0.34rem 0.65rem;font-family:var(--f-body);
+      font-size:0.88rem;outline:none;transition:border-color 0.14s,background 0.14s;}
+    .hdr-filter-input:focus{border-color:var(--mustard);background:#4a3c2a;}
+    .hdr-filter-input::placeholder{color:var(--input-ph);}
+    .hdr-filter-clear{background:none;border:none;color:#6a5840;cursor:pointer;
+      font-size:0.85rem;padding:0.2rem 0.4rem;flex-shrink:0;transition:color 0.12s;}
+    .hdr-filter-clear:hover{color:var(--mustard);}
+
+    /* API key */
+    .hdr-key{display:flex;align-items:center;gap:0.5rem;margin-left:auto;flex-shrink:0;}
+    .hdr-key-label{font-family:var(--f-mono);font-size:0.52rem;letter-spacing:0.14em;
+      text-transform:uppercase;color:#8a7060;white-space:nowrap;}
+    .hdr-key-input{width:160px;background:var(--input-bg);border:1px solid var(--input-border);
+      color:var(--input-text);padding:0.32rem 0.58rem;font-family:var(--f-mono);
+      font-size:0.68rem;outline:none;transition:border-color 0.12s,background 0.14s;}
+    .hdr-key-input:focus{border-color:var(--mustard);background:#4a3c2a;}
+    .hdr-key-input::placeholder{color:var(--input-ph);}
+    .hdr-key-ok{font-family:var(--f-mono);font-size:0.6rem;color:#6a9a6a;}
+
+    /* AI button */
+    .hdr-ai-btn{width:34px;height:34px;border-radius:50%;background:var(--wine);
+      color:var(--mustard-lt);border:1px solid var(--wine-dp);cursor:pointer;font-size:0.95rem;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+      box-shadow:0 2px 8px rgba(107,39,55,0.5);transition:background 0.14s,transform 0.14s;}
+    .hdr-ai-btn:hover{background:var(--wine-hv);transform:scale(1.08);}
+    .hdr-ai-open{background:var(--mustard);color:var(--black);}
+
+    /* ── STATUS BAR ── */
+    .status{position:fixed;top:var(--hdr-h);left:0;right:0;z-index:299;height:22px;
+      background:#0a0806;display:flex;align-items:center;padding:0 1rem;gap:1rem;}
+    .status-text{font-family:var(--f-mono);font-size:0.58rem;letter-spacing:0.08em;
+      color:#6a5a48;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .status-age{font-family:var(--f-mono);font-size:0.56rem;color:#4a3e32;flex-shrink:0;}
+    /* Refresh button — larger and more visible */
+    .status-btn{font-family:var(--f-mono);font-size:0.64rem;letter-spacing:0.1em;
+      text-transform:uppercase;color:var(--mustard-lt);background:none;border:none;
+      cursor:pointer;flex-shrink:0;padding:0;transition:color 0.12s;}
+    .status-btn:hover{color:#fff;}
+
+    /* ── NAV TABS ── */
+    .nav{position:fixed;top:calc(var(--hdr-h) + 22px);left:0;right:0;z-index:298;
+      height:var(--nav-h);display:flex;align-items:stretch;background:var(--wine);
+      border-bottom:2px solid var(--wine-dp);overflow-x:auto;scrollbar-width:none;}
+    .nav::-webkit-scrollbar{display:none;}
+    .nav-tab{flex:0 0 auto;padding:0 1.25rem;font-family:var(--f-body);font-size:0.68rem;
+      letter-spacing:0.18em;text-transform:uppercase;color:rgba(238,210,200,0.65);
+      background:none;border:none;border-right:1px solid rgba(255,255,255,0.09);
+      cursor:pointer;white-space:nowrap;transition:background 0.12s,color 0.12s;}
+    .nav-tab:hover{background:var(--wine-hv);color:#fff;}
+    .nav-active{background:var(--wine-dp);color:var(--mustard-lt);
+      font-style:italic;border-bottom:2px solid var(--mustard);}
+
+    /* ── BODY ── */
+    .body{position:fixed;top:calc(var(--hdr-h) + 22px + var(--nav-h));
+      left:0;right:0;bottom:0;display:flex;
+      transition:right 0.32s cubic-bezier(0.4,0,0.2,1);}
+    .body-shifted{right:440px;}
+
+    /* ── TODAY PANEL ── */
+    .today{width:var(--today-w);flex-shrink:0;display:flex;flex-direction:column;
+      background:var(--black);border-right:2px solid var(--wine-dp);overflow:hidden;}
+    .today-head{padding:0.6rem 1rem 0.5rem;background:var(--wine-dp);
+      border-bottom:2px solid var(--mustard);display:flex;align-items:baseline;gap:0.5rem;}
+    .today-title{font-family:var(--f-disp);font-size:0.95rem;font-weight:700;
+      font-style:italic;color:var(--mustard-lt);}
+    .today-count{font-family:var(--f-mono);font-size:0.58rem;color:#7a5a48;}
+    .today-body{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2a1a20 transparent;}
+    .today-art{display:block;padding:0.8rem 1rem;border-bottom:1px solid #1e1218;
+      text-decoration:none;color:inherit;position:relative;transition:background 0.1s;}
+    .today-art:hover{background:#201018;}
+    .today-bar{position:absolute;left:0;top:0;bottom:0;width:0;
+      background:var(--mustard);transition:width 0.13s;}
+    .today-art:hover .today-bar{width:2px;}
+    /* Publication name — warm gold, clearly legible on black */
+    .today-src{font-family:var(--f-mono);font-size:0.62rem;letter-spacing:0.14em;
+      text-transform:uppercase;color:var(--mustard-pale);margin-bottom:4px;}
+    /* Headline — larger */
+    .today-ttl{font-family:var(--f-disp);font-size:0.92rem;font-weight:600;
+      line-height:1.28;color:#ddd4c0;transition:color 0.12s;}
+    .today-art:hover .today-ttl{color:var(--mustard-lt);}
+    /* Date — slightly larger */
+    .today-date{font-size:0.65rem;color:#6a5848;font-style:italic;margin-top:4px;}
+    .today-score{position:absolute;top:0.65rem;right:0.7rem;font-family:var(--f-mono);
+      font-size:0.5rem;color:var(--mustard);opacity:0.55;}
+    .today-tr{display:inline-block;margin-top:5px;font-family:var(--f-mono);font-size:0.54rem;
+      letter-spacing:0.1em;text-transform:uppercase;color:#5a4838;
+      text-decoration:none;border-bottom:1px solid #2e2020;}
+    .today-tr:hover{color:var(--mustard-lt);}
+    .today-empty{padding:1.5rem 1rem;font-size:0.82rem;font-style:italic;
+      color:#3a2828;line-height:1.55;text-align:center;}
+
+    /* ── MAIN PANEL ── */
+    .main{flex:1;display:flex;flex-direction:column;background:var(--parchment);overflow:hidden;}
+    .main-head{padding:0.55rem 1.1rem 0.45rem;background:var(--parchment-mid);
+      border-bottom:3px solid var(--mustard);
+      display:flex;align-items:baseline;justify-content:space-between;}
+    .main-cat{font-family:var(--f-mono);font-size:0.62rem;
+      letter-spacing:0.22em;text-transform:uppercase;color:var(--mustard);}
+    .main-meta{font-family:var(--f-mono);font-size:0.58rem;color:var(--black-m);}
+    .main-grid{flex:1;overflow-y:auto;scrollbar-width:thin;
+      scrollbar-color:var(--parchment-dk) transparent;
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));
+      align-content:start;}
+
+    /* ── ARTICLE CARD ── */
+    .art{display:block;padding:0.9rem 1.15rem;
+      border-bottom:1px solid var(--parchment-dk);
+      border-right:1px solid var(--parchment-dk);
+      text-decoration:none;color:inherit;position:relative;
+      background:var(--parchment);transition:background 0.1s;}
+    .art:hover{background:var(--parchment-mid);}
+    .art-bar{position:absolute;left:0;top:0;bottom:0;width:0;
+      background:var(--mustard);transition:width 0.13s;}
+    .art:hover .art-bar{width:3px;}
+    .art-dot{position:absolute;top:0.7rem;right:0.9rem;width:6px;height:6px;
+      border-radius:50%;background:var(--mustard);opacity:0.65;}
+    /* Source label in main panel — wine red, legible on parchment */
+    .art-src{font-family:var(--f-mono);font-size:0.6rem;letter-spacing:0.15em;
+      text-transform:uppercase;color:var(--wine);margin-bottom:5px;}
+    /* Article title — larger */
+    .art-ttl{font-family:var(--f-disp);font-size:1.02rem;font-weight:600;
+      line-height:1.28;color:var(--black-s);margin-bottom:6px;transition:color 0.12s;}
+    .art:hover .art-ttl{color:var(--wine);}
+    /* Description — larger */
+    .art-desc{font-size:0.82rem;color:var(--black-m);line-height:1.48;
+      font-family:var(--f-body);display:-webkit-box;-webkit-line-clamp:2;
+      -webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;}
+    .art-foot{display:flex;align-items:center;gap:0.8rem;}
+    /* Date — larger */
+    .art-date{font-size:0.68rem;color:var(--black-m);font-style:italic;}
+    .art-tr{font-family:var(--f-mono);font-size:0.54rem;letter-spacing:0.1em;
+      text-transform:uppercase;color:#9a7858;text-decoration:none;
+      border-bottom:1px solid var(--parchment-dk);}
+    .art-tr:hover{color:var(--wine);}
+    .main-msg{padding:2rem 1.5rem;font-size:0.86rem;font-style:italic;
+      color:var(--black-m);line-height:1.6;grid-column:1/-1;}
+    .retry-btn{display:inline-block;margin-top:0.8rem;font-family:var(--f-mono);
+      font-size:0.6rem;letter-spacing:0.14em;text-transform:uppercase;
+      color:var(--wine);background:none;border:1px solid var(--parchment-dk);
+      padding:0.3rem 0.7rem;cursor:pointer;}
+    .retry-btn:hover{background:var(--wine);color:#fff;}
+
+    /* ── AI PANEL ── */
+    .chat{position:fixed;top:0;right:0;bottom:0;z-index:400;width:440px;
+      background:var(--chat-bg);border-left:2px solid var(--wine-dp);
+      display:flex;flex-direction:column;transform:translateX(100%);
+      transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);
+      box-shadow:-6px 0 32px rgba(0,0,0,0.6);}
+    .chat-visible{transform:translateX(0);}
+    .chat-head{padding:0.95rem 1.25rem 0.85rem;background:var(--chat-sf);
+      border-bottom:1px solid var(--chat-bd);
+      display:flex;justify-content:space-between;align-items:flex-start;}
+    .chat-title{font-family:var(--f-disp);font-style:italic;font-size:1.05rem;color:var(--chat-tx);}
+    .chat-sub{font-family:var(--f-mono);font-size:0.57rem;letter-spacing:0.18em;
+      text-transform:uppercase;color:var(--mustard);margin-top:4px;}
+    .chat-close{background:none;border:none;color:var(--chat-mt);cursor:pointer;
+      font-size:0.9rem;padding:2px 5px;}
+    .chat-close:hover{color:var(--chat-tx);}
+    .chat-msgs{flex:1;overflow-y:auto;padding:1rem 1.25rem;
+      display:flex;flex-direction:column;gap:1rem;
+      scrollbar-width:thin;scrollbar-color:var(--chat-bd) transparent;}
+    .chat-welcome{color:var(--chat-mt);font-family:var(--f-body);font-style:italic;
+      font-size:0.9rem;line-height:1.7;text-align:center;margin:auto;padding:2rem 0.5rem;}
+    .chat-welcome-s{color:var(--mustard-lt);font-style:normal;}
+    .msg{font-family:var(--f-body);font-size:0.92rem;line-height:1.62;}
+    .msg-u{align-self:flex-end;max-width:88%;background:var(--chat-sf);
+      color:var(--chat-tx);padding:0.65rem 0.9rem;border:1px solid var(--chat-bd);}
+    .msg-a{align-self:flex-start;max-width:96%;color:var(--chat-tx);
+      border-left:2px solid var(--mustard);padding-left:0.85rem;}
+    .msg-label{font-family:var(--f-mono);font-size:0.57rem;letter-spacing:0.18em;
+      text-transform:uppercase;color:var(--mustard);margin-bottom:5px;}
+    .msg-body{white-space:pre-wrap;}
+    .thinking{display:flex;gap:5px;align-items:center;
+      border-left:2px solid var(--mustard);padding-left:0.85rem;}
+    .dot{width:5px;height:5px;border-radius:50%;background:var(--mustard);
+      opacity:0.2;animation:pulse 1.4s infinite;}
+    .d2{animation-delay:0.22s;}.d3{animation-delay:0.44s;}
+    @keyframes pulse{0%,80%,100%{opacity:0.15;}40%{opacity:0.9;}}
+    .chat-row{padding:0.85rem 1.25rem;background:var(--chat-sf);
+      border-top:1px solid var(--chat-bd);display:flex;gap:0.5rem;align-items:flex-end;}
+    .chat-ta{flex:1;background:var(--chat-bg);border:1px solid var(--chat-bd);
+      color:var(--chat-tx);padding:0.55rem 0.7rem;font-family:var(--f-body);
+      font-size:0.92rem;resize:none;min-height:44px;max-height:120px;
+      outline:none;transition:border-color 0.14s;}
+    .chat-ta:focus{border-color:var(--mustard);}
+    .chat-ta::placeholder{color:var(--chat-mt);}
+    .chat-send{background:var(--mustard);color:var(--black);border:none;
+      padding:0.55rem 1.15rem;font-family:var(--f-body);font-size:0.86rem;
+      font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.12s;}
+    .chat-send:hover:not(:disabled){background:var(--mustard-lt);}
+    .chat-send:disabled{opacity:0.3;cursor:not-allowed;}
+    .chat-clear{font-family:var(--f-body);font-size:0.68rem;font-style:italic;
+      color:var(--chat-mt);background:none;border:none;cursor:pointer;
+      display:block;text-align:center;width:100%;
+      border-top:1px solid var(--chat-bd);padding:0.42rem;}
+    .chat-clear:hover{color:var(--chat-tx);}
+
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .spin{display:inline-block;animation:spin 1s linear infinite;}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+"use strict";
+var h           = React.createElement;
+var useState    = React.useState;
+var useEffect   = React.useEffect;
+var useRef      = React.useRef;
+var useMemo     = React.useMemo;
+var useCallback = React.useCallback;
+
+// ─── CACHE ───────────────────────────────────────────────────────────────────
+var CACHE_KEY    = "scriptorium_cache_v4";
+var CACHE_MAX_MS = 6 * 60 * 60 * 1000;
+
+function saveCache(data){
+  try{ localStorage.setItem(CACHE_KEY,JSON.stringify({ts:Date.now(),data:data})); }catch(e){}
+}
+function loadCache(){
+  try{
+    var raw=localStorage.getItem(CACHE_KEY);
+    if(!raw) return null;
+    var obj=JSON.parse(raw);
+    return (obj&&obj.data&&obj.ts)?obj:null;
+  }catch(e){ return null; }
+}
+
+// ─── FEEDS ───────────────────────────────────────────────────────────────────
+// All sources open-access or substantially free.
+// British proper nouns retained as registered (Medievalists.net etc.).
+var FEEDS = {
+  "Mediæval & Manuscript": [
+    { name:"Medievalists.net",    url:"https://www.medievalists.net/feed/" },
+    { name:"JSTOR Daily",         url:"https://daily.jstor.org/feed/" },
+    { name:"The Heroic Age",      url:"https://www.heroicage.org/rss.xml" },
+    { name:"OpenEdition",         url:"https://journals.openedition.org/postmedievalia/rss" },
+    { name:"The Conversation UK", url:"https://theconversation.com/uk/articles.atom" },
+  ],
+  "Hermeneutics & Philosophy": [
+    { name:"Notre Dame Phil.Rev", url:"https://ndpr.nd.edu/rss/" },
+    { name:"Philosophy Now",      url:"https://philosophynow.org/rss" },
+    { name:"Marginalia Review",   url:"https://marginalia.lol/feed" },
+    { name:"Aeon",                url:"https://aeon.co/feed.rss" },
+    { name:"Public Books",        url:"https://www.publicbooks.org/feed/" },
+  ],
+  "Jewish Thought & Antisemitism": [
+    { name:"Jewish Rev. of Books",url:"https://jewishreviewofbooks.com/feed/" },
+    { name:"Mosaic Magazine",     url:"https://mosaicmagazine.com/feed/" },
+    { name:"Fathom Journal",      url:"https://fathomjournal.org/feed/" },
+    { name:"Times of Israel",     url:"https://www.timesofisrael.com/feed/" },
+    { name:"Tablet Magazine",     url:"https://www.tabletmag.com/feed" },
+  ],
+  // Guardian reduced to books only; right-of-centre titles added
+  "Literary & Travel": [
+    { name:"Guardian Books",      url:"https://www.theguardian.com/books/rss" },
+    { name:"The Spectator",       url:"https://www.spectator.co.uk/feed" },
+    { name:"The Critic",          url:"https://thecritic.co.uk/feed/" },
+    { name:"Quillette",           url:"https://quillette.com/feed/" },
+    { name:"First Things",        url:"https://www.firstthings.com/rss" },
+    { name:"The Free Press",      url:"https://www.thefp.com/feed" },
+    { name:"Literary Hub",        url:"https://lithub.com/feed/" },
+    { name:"Aeon Essays",         url:"https://aeon.co/essays.atom" },
+  ],
+  // Replaced failing URLs with verified alternatives
+  "European Commentary": [
+    { name:"Eurozine",            url:"https://www.eurozine.com/feed/" },
+    { name:"Engelsberg Ideas",    url:"https://engelsbergideas.com/feed/" },
+    { name:"New Statesman",       url:"https://www.newstatesman.com/feed" },
+    { name:"Prospect",            url:"https://www.prospectmagazine.co.uk/feed" },
+    { name:"Il Post",             url:"https://www.ilpost.it/feed/" },
+    { name:"Swissinfo",           url:"https://www.swissinfo.ch/eng/rss/chronological" },
+  ],
+  // Replaced failing URLs; Japan Times and Buddhistdoor most reliable
+  "Zen & Contemplative": [
+    { name:"Tricycle",            url:"https://tricycle.org/feed/" },
+    { name:"Lion's Roar",         url:"https://www.lionsroar.com/feed/" },
+    { name:"Plough Quarterly",    url:"https://www.plough.com/en/rss" },
+    { name:"Buddhistdoor",        url:"https://www.buddhistdoor.net/feed/" },
+    { name:"Japan Times",         url:"https://www.japantimes.co.jp/feed/" },
+  ],
+};
+var CATS = Object.keys(FEEDS);
+
+// ─── RESEARCH KEYWORDS (British spellings) ───────────────────────────────────
+var KEYWORDS = [
+  "mediaeval","mediæval","manuscript","beowulf","anglo-saxon","old english","vernacular",
+  "hermeneutics","gadamer","interpretation","textual","philology","editorial",
+  "antisemitism","jewish","judaism","israel","talmud","holocaust","zionism",
+  "zen","buddhism","contemplative","meditation","monastery",
+  "philosophy","analytic","metaphysics","epistemology",
+  "travel","writing","essay","memoir","narrative","literary",
+  "edition","transmission","scribal","cotton","thorkelin",
+  "macintyre","chartier","tradition","rationality","wirkungsgeschichte",
+  "italian","swiss","german","european","apennine","humanism","renaissance",
+];
+
+// ─── SYSTEM PROMPT (British spellings throughout) ─────────────────────────────
+var SYS = 'You are a research assistant to a doctoral candidate at the University of Zürich, supervised by Prof. Olga Timofeeva. His dissertation is provisionally titled "Beowulf and the Editorial Construction of Meaning." He holds an Oxford MA in Linguistics, is bilingual in English and Italian, and has reading knowledge of French, German, and Hebrew.\n\nHis scholarly specialisms are: mediæval manuscript studies (Beowulf, the Cotton Library, the Thorkelin transcripts, early modern cataloguing practices); editorial theory and the hermeneutics of textual transmission; Gadamer\'s Wirkungsgeschichte; MacIntyre\'s tradition-constituted rationality; Chartier\'s sociology of texts (the "forms produce meaning" thesis); analytic philosophy; Zen Buddhism; and the history and phenomenology of antisemitism. He has a confirmed visiting student position at Clare Hall, Cambridge for Michaelmas Term 2026.\n\nHe is also a writer with active interests in: travel writing (in the tradition of Thubron, Leigh Fermor, Chatwin, Dalrymple, Norman Lewis); contemplative and philosophical fiction (Eddison, Wolfe, Broch, Yourcenar, Peake, Rulfo); photography; and life writing. He is developing a Substack series (Corridor Culture) analysing the British foreign policy commentary class.\n\nRespond with scholarly precision and economy. Calibrate tone for a European intellectual register, not an American one. Use Chicago citation style when referencing sources. Flag ideological sensitivities wherever they arise, whether progressive or conservative. Prefer peer-reviewed, primary, and authoritative sources. When relevant, draw on materials in English, French, German, Italian, and Hebrew, quoting originals with near-literal translations. Bring in a broad spectrum of scholarly opinion on complex questions. Use minimal, clear, logical prose. Use British English spelling throughout (mediaeval, organise, colour, recognise, etc.).';
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fmtDate(str){
+  if(!str) return "";
+  var d=new Date(str);
+  if(isNaN(d)) return "";
+  return d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+}
+function fmtAge(ms){
+  var m=Math.round(ms/60000);
+  if(m<2)  return "just now";
+  if(m<60) return m+"m ago";
+  var hr=Math.round(m/60);
+  if(hr<24) return hr+"h ago";
+  return Math.round(hr/24)+"d ago";
+}
+function strip(html){
+  if(!html) return "";
+  return html.replace(/<[^>]*>/g,"").replace(/&[a-z#0-9]+;/gi," ").replace(/\s+/g," ").trim();
+}
+function scoreItem(item){
+  var t=((item.title||"")+" "+strip(item.description||"")).toLowerCase();
+  return KEYWORDS.filter(function(k){ return t.indexOf(k)!==-1; }).length;
+}
+function matchFilter(item,f){
+  if(!f.trim()) return true;
+  var t=((item.title||"")+" "+strip(item.description||"")).toLowerCase();
+  return f.toLowerCase().split(/\s+/).every(function(w){ return t.indexOf(w)!==-1; });
+}
+function trUrl(u){
+  return "https://translate.google.com/translate?sl=auto&tl=en&u="+encodeURIComponent(u);
+}
+
+// ─── FETCH ───────────────────────────────────────────────────────────────────
+function fetchWithTimeout(url,ms){
+  return new Promise(function(res,rej){
+    var done=false;
+    var t=setTimeout(function(){ if(!done){done=true;rej(new Error("timeout"));} },ms||8000);
+    fetch(url).then(function(r){ if(!done){done=true;clearTimeout(t);res(r);} })
+              .catch(function(e){ if(!done){done=true;clearTimeout(t);rej(e);} });
+  });
+}
+function parseXml(xml,src){
+  try{
+    var doc=new DOMParser().parseFromString(xml,"application/xml");
+    var nodes=Array.from(doc.querySelectorAll("item, entry")).slice(0,12);
+    return nodes.map(function(el){
+      var g=function(tag){ return (el.querySelector(tag)||{textContent:""}).textContent.trim(); };
+      var lnk=g("link")||((el.querySelector("link")||{getAttribute:function(){return "";}}).getAttribute("href"))||"";
+      return {_source:src,title:g("title"),link:lnk,
+              description:g("description")||g("summary")||g("content"),
+              pubDate:g("pubDate")||g("published")||g("updated")};
+    }).filter(function(i){ return i.title&&i.link; });
+  }catch(e){ return []; }
+}
+async function fetchOneFeed(name,url){
+  try{
+    var r=await fetchWithTimeout("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(url)+"&count=12",7000);
+    var j=await r.json();
+    if(j.status==="ok"&&j.items&&j.items.length>0)
+      return j.items.slice(0,12).map(function(i){ return Object.assign({},i,{_source:name}); });
+  }catch(e){}
+  try{
+    var r2=await fetchWithTimeout("https://api.allorigins.win/get?url="+encodeURIComponent(url),7000);
+    var j2=await r2.json();
+    var p2=parseXml(j2.contents||"",name);
+    if(p2.length>0) return p2;
+  }catch(e){}
+  try{
+    var r3=await fetchWithTimeout("https://corsproxy.io/?"+encodeURIComponent(url),7000);
+    var t3=await r3.text();
+    var p3=parseXml(t3,name);
+    if(p3.length>0) return p3;
+  }catch(e){}
+  return [];
+}
+async function fetchCategory(cat,onMsg){
+  var feeds=FEEDS[cat]; var all=[];
+  for(var i=0;i<feeds.length;i++){
+    if(onMsg) onMsg("Fetching: "+feeds[i].name+"…");
+    var items=await fetchOneFeed(feeds[i].name,feeds[i].url);
+    all=all.concat(items);
+    await new Promise(function(r){ setTimeout(r,300); });
+  }
+  all.sort(function(a,b){ return new Date(b.pubDate||0)-new Date(a.pubDate||0); });
+  return all;
+}
+
+// ─── COMPONENT ───────────────────────────────────────────────────────────────
+function Scriptorium(){
+  var initCache=loadCache();
+  var initData=initCache?initCache.data:CATS.reduce(function(o,c){ o[c]=[]; return o; },{});
+
+  var artS=useState(initData);       var arts=artS[0];     var setArts=artS[1];
+  var ageS=useState(initCache?Date.now()-initCache.ts:null); var cacheAge=ageS[0]; var setCacheAge=ageS[1];
+  var stS=useState(CATS.reduce(function(o,c){ o[c]=initCache?"cached":"idle"; return o; },{}));
+  var stat=stS[0]; var setStat=stS[1];
+  var smS=useState(initCache?"Loaded from cache · refreshing in background…":"Initialising…");
+  var stMsg=smS[0]; var setStMsg=smS[1];
+  var tabS=useState(CATS[0]);        var tab=tabS[0];       var setTab=tabS[1];
+  var filtS=useState("");            var filt=filtS[0];     var setFilt=filtS[1];
+  var chatS=useState(false);         var chatOpen=chatS[0]; var setChatOpen=chatS[1];
+  var msgsS=useState([]);            var msgs=msgsS[0];     var setMsgs=msgsS[1];
+  var inpS=useState("");             var inp=inpS[0];       var setInp=inpS[1];
+  var aiLS=useState(false);          var aiLoad=aiLS[0];    var setAiLoad=aiLS[1];
+  var keyS=useState("");             var apiKey=keyS[0];    var setApiKey=keyS[1];
+  var keyOkS=useState(false);        var keyOk=keyOkS[0];   var setKeyOk=keyOkS[1];
+  var endRef=useRef(null);
+  var fetchRef=useRef(false);
+
+  var doFetch=useCallback(async function(force){
+    if(fetchRef.current) return;
+    var cached=loadCache();
+    if(!force&&cached&&(Date.now()-cached.ts)<CACHE_MAX_MS){
+      setStMsg("Cache is current · next refresh in "
+        +Math.round((CACHE_MAX_MS-(Date.now()-cached.ts))/3600000)+"h");
+      return;
+    }
+    fetchRef.current=true;
+    var newData=Object.assign({},arts);
+    for(var i=0;i<CATS.length;i++){
+      var cat=CATS[i];
+      setStat(function(p){ var n=Object.assign({},p); n[cat]="loading"; return n; });
+      setStMsg("Refreshing: "+cat+"…");
+      try{
+        var items=await fetchCategory(cat,setStMsg);
+        (function(c,it){
+          newData=Object.assign({},newData); newData[c]=it;
+          setArts(Object.assign({},newData));
+          setStat(function(p){ var n=Object.assign({},p); n[c]=it.length>0?"done":"empty"; return n; });
+        })(cat,items);
+      }catch(e){
+        (function(c){ setStat(function(p){ var n=Object.assign({},p); n[c]="error"; return n; }); })(cat);
+      }
+      await new Promise(function(r){ setTimeout(r,500); });
+    }
+    saveCache(newData);
+    setCacheAge(0);
+    setStMsg("All feeds refreshed · "+new Date().toLocaleTimeString("en-GB"));
+    fetchRef.current=false;
+  },[]);
+
+  useEffect(function(){
+    doFetch(false);
+    var ticker=setInterval(function(){
+      var c=loadCache(); if(c) setCacheAge(Date.now()-c.ts);
+    },60000);
+    return function(){ clearInterval(ticker); };
+  },[]);
+
+  async function retryCat(cat){
+    setStat(function(p){ var n=Object.assign({},p); n[cat]="loading"; return n; });
+    setStMsg("Retrying "+cat+"…");
+    try{
+      var items=await fetchCategory(cat,setStMsg);
+      setArts(function(prev){ var n=Object.assign({},prev); n[cat]=items; return n; });
+      setStat(function(p){ var n=Object.assign({},p); n[cat]=items.length>0?"done":"empty"; return n; });
+      setStMsg(items.length>0?cat+": done.":cat+": no items found.");
+      var cached=loadCache();
+      if(cached){ cached.data[cat]=items; saveCache(cached.data); }
+    }catch(e){
+      setStat(function(p){ var n=Object.assign({},p); n[cat]="error"; return n; });
+      setStMsg(cat+": failed.");
+    }
+  }
+
+  useEffect(function(){
+    if(endRef.current) endRef.current.scrollIntoView({behavior:"smooth"});
+  },[msgs,aiLoad]);
+
+  var todayItems=useMemo(function(){
+    var all=CATS.reduce(function(a,c){ return a.concat(arts[c]||[]); },[]);
+    return all.map(function(item){ return Object.assign({},item,{_score:scoreItem(item)}); })
+      .filter(function(item){ return item._score>0&&matchFilter(item,filt); })
+      .sort(function(a,b){ return b._score-a._score||new Date(b.pubDate||0)-new Date(a.pubDate||0); })
+      .slice(0,40);
+  },[arts,filt]);
+
+  var tabItems=useMemo(function(){
+    return (arts[tab]||[]).filter(function(item){ return matchFilter(item,filt); });
+  },[arts,tab,filt]);
+
+  var isRefreshing=CATS.some(function(c){ return stat[c]==="loading"; });
+
+  async function sendMsg(){
+    var text=inp.trim();
+    if(!text||aiLoad) return;
+    if(!apiKey.trim()){
+      setMsgs(function(p){ return p.concat([
+        {role:"user",content:text},
+        {role:"assistant",content:"Please enter your Anthropic API key in the header (sk-ant-…). Keys are obtained at console.anthropic.com."}
+      ]); });
+      setInp(""); return;
+    }
+    var updated=msgs.concat([{role:"user",content:text}]);
+    setMsgs(updated); setInp(""); setAiLoad(true);
+    try{
+      var res=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":apiKey.trim(),"anthropic-version":"2023-06-01"},
+        body:JSON.stringify({model:"claude-opus-4-5",max_tokens:1000,system:SYS,messages:updated}),
+      });
+      var data=await res.json();
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||(data.error&&data.error.message)||"(No response.)";
+      setMsgs(updated.concat([{role:"assistant",content:reply}]));
+    }catch(e){
+      setMsgs(updated.concat([{role:"assistant",content:"Connection error: "+e.message}]));
+    }
+    setAiLoad(false);
+  }
+
+  function onChatKey(e){ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); sendMsg(); } }
+
+  var today=new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+  return h(React.Fragment,null,
+
+    // HEADER
+    h("header",{className:"hdr"},
+      h("div",{className:"hdr-brand"},
+        h("div",{className:"hdr-wordmark"},
+          h("span",{className:"hdr-s"},"S"),
+          h("span",{className:"hdr-rest"},"cript"),
+          h("span",{className:"hdr-em"},"o"),
+          h("span",{className:"hdr-rest"},"rium")
+        ),
+        h("div",{className:"hdr-date"},today)
+      ),
+      h("div",{className:"hdr-div"}),
+      h("div",{className:"hdr-filter"},
+        h("span",{className:"hdr-filter-label"},"Filter"),
+        h("input",{className:"hdr-filter-input",type:"text",
+          placeholder:"keyword or phrase…",value:filt,
+          onChange:function(e){ setFilt(e.target.value); }}),
+        filt?h("button",{className:"hdr-filter-clear",onClick:function(){ setFilt(""); }},"✕"):null
+      ),
+      h("div",{className:"hdr-key"},
+        h("span",{className:"hdr-key-label"},"API key"),
+        h("input",{type:"password",className:"hdr-key-input",
+          placeholder:"sk-ant-…",value:apiKey,
+          onChange:function(e){ setApiKey(e.target.value); setKeyOk(false); },
+          onKeyDown:function(e){
+            if(e.key==="Enter"&&apiKey.trim()){
+              setKeyOk(true); setTimeout(function(){ setKeyOk(false); },2500);
+            }
+          },
+          autoComplete:"off",spellCheck:"false"}),
+        keyOk?h("span",{className:"hdr-key-ok"},"✓"):null
+      ),
+      h("button",{
+        className:"hdr-ai-btn"+(chatOpen?" hdr-ai-open":""),
+        onClick:function(){ setChatOpen(function(v){ return !v; }); },
+        title:"Research Assistant"
+      },"✒")
+    ),
+
+    // STATUS BAR
+    h("div",{className:"status"},
+      h("span",{className:"status-text"},
+        isRefreshing
+          ?h("span",null,h("span",{className:"spin"},"⟳")," "+stMsg)
+          :stMsg
+      ),
+      cacheAge!==null?h("span",{className:"status-age"},"cache: "+fmtAge(cacheAge)):null,
+      !isRefreshing
+        ?h("button",{className:"status-btn",
+            onClick:function(){ fetchRef.current=false; doFetch(true); }},"↺ Refresh")
+        :null
+    ),
+
+    // NAV TABS
+    h("nav",{className:"nav"},
+      CATS.map(function(cat){
+        return h("button",{key:cat,
+          className:"nav-tab"+(tab===cat?" nav-active":""),
+          onClick:function(){ setTab(cat); }},
+          cat+(stat[cat]==="loading"?" ⟳":"")
+        );
+      })
+    ),
+
+    // BODY
+    h("div",{className:"body"+(chatOpen?" body-shifted":"")},
+
+      // TODAY PANEL
+      h("div",{className:"today"},
+        h("div",{className:"today-head"},
+          h("span",{className:"today-title"},"Today"),
+          h("span",{className:"today-count"},todayItems.length+" curated")
+        ),
+        h("div",{className:"today-body"},
+          todayItems.length===0
+            ?h("div",{className:"today-empty"},
+                isRefreshing?"Gathering feeds…":
+                filt?'No results for "'+filt+'"':
+                "Curated items will appear as feeds load.")
+            :todayItems.map(function(item,i){
+                return h("a",{key:i,href:item.link,target:"_blank",
+                  rel:"noopener noreferrer",className:"today-art"},
+                  h("div",{className:"today-bar"}),
+                  h("div",{className:"today-score"},"▪".repeat(Math.min(item._score,5))),
+                  h("div",{className:"today-src"},item._source),
+                  h("div",{className:"today-ttl"},item.title),
+                  h("div",{className:"today-date"},fmtDate(item.pubDate)),
+                  h("a",{href:trUrl(item.link),target:"_blank",rel:"noopener noreferrer",
+                    className:"today-tr",onClick:function(e){ e.stopPropagation(); }},"Translate ↗")
+                );
+              })
+        )
+      ),
+
+      // MAIN PANEL
+      h("div",{className:"main"},
+        h("div",{className:"main-head"},
+          h("span",{className:"main-cat"},tab),
+          h("span",{className:"main-meta"},
+            stat[tab]==="loading"?"Refreshing…":
+            tabItems.length===0?"No articles":
+            tabItems.length+" article"+(tabItems.length!==1?"s":"")+(filt?' · "'+filt+'"':"")
+          )
+        ),
+        h("div",{className:"main-grid"},
+          stat[tab]==="loading"&&tabItems.length===0
+            ?h("div",{className:"main-msg"},"Refreshing "+tab+"…")
+            :tabItems.length===0
+              ?h("div",{className:"main-msg"},
+                  filt?'No articles matching "'+filt+'" in this category.':
+                  "No articles retrieved. These feeds may require authentication or be temporarily unavailable.",
+                  h("br"),
+                  h("button",{className:"retry-btn",
+                    onClick:function(){ retryCat(tab); }},"↺ Retry "+tab)
+                )
+              :tabItems.map(function(item,i){
+                  var rel=scoreItem(item)>0;
+                  return h("a",{key:i,href:item.link,target:"_blank",
+                    rel:"noopener noreferrer",className:"art"},
+                    h("div",{className:"art-bar"}),
+                    rel?h("div",{className:"art-dot",title:"Matches your research interests"}):null,
+                    h("div",{className:"art-src"},item._source),
+                    h("div",{className:"art-ttl"},item.title),
+                    item.description?h("div",{className:"art-desc"},strip(item.description).slice(0,190)):null,
+                    h("div",{className:"art-foot"},
+                      h("span",{className:"art-date"},fmtDate(item.pubDate)),
+                      h("a",{href:trUrl(item.link),target:"_blank",rel:"noopener noreferrer",
+                        className:"art-tr",onClick:function(e){ e.stopPropagation(); }},"Translate ↗")
+                    )
+                  );
+                })
+        )
+      )
+    ),
+
+    // AI PANEL
+    h("aside",{className:"chat"+(chatOpen?" chat-visible":"")},
+      h("div",{className:"chat-head"},
+        h("div",null,
+          h("div",{className:"chat-title"},"Research Assistant"),
+          h("div",{className:"chat-sub"},"Scriptorium · Zürich")
+        ),
+        h("button",{className:"chat-close",onClick:function(){ setChatOpen(false); }},"✕")
+      ),
+      h("div",{className:"chat-msgs"},
+        msgs.length===0
+          ?h("div",{className:"chat-welcome"},
+              h("span",{className:"chat-welcome-s"},"Research assistant ready."),
+              h("br"),h("br"),
+              "Ask about any concept, source, or connection in your reading. Responses are calibrated to your work in mediæval studies, hermeneutics, analytic philosophy, Zen Buddhism, and the phenomenology of antisemitism.",
+              h("br"),h("br"),
+              h("em",null,"Enter to send · Shift+Enter for new line.")
+            )
+          :msgs.map(function(m,i){
+              return h("div",{key:i,className:"msg "+(m.role==="user"?"msg-u":"msg-a")},
+                m.role==="assistant"?h("div",{className:"msg-label"},"Assistant"):null,
+                h("div",{className:"msg-body"},m.content)
+              );
+            }),
+        aiLoad?h("div",{className:"thinking"},
+          h("div",{className:"dot"}),
+          h("div",{className:"dot d2"}),
+          h("div",{className:"dot d3"})
+        ):null,
+        h("div",{ref:endRef})
+      ),
+      h("div",{className:"chat-row"},
+        h("textarea",{className:"chat-ta",
+          placeholder:"Ask a research question…",
+          value:inp,onChange:function(e){ setInp(e.target.value); },
+          onKeyDown:onChatKey,rows:2}),
+        h("button",{className:"chat-send",onClick:sendMsg,
+          disabled:aiLoad||!inp.trim()},"Send")
+      ),
+      msgs.length>0
+        ?h("button",{className:"chat-clear",onClick:function(){ setMsgs([]); }},
+            "Clear conversation")
+        :null
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(Scriptorium,null));
+</script>
+</body>
+</html>
